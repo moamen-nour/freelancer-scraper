@@ -1,12 +1,11 @@
 import scrapy
-from urllib.parse import urlencode
-
+from urllib.parse import urlencode , urlparse
 
 class JobsSpider(scrapy.Spider):
     name = 'jobs'
 
     def start_requests(self):
-        base_url = 'http://www.freelancer.com/jobs/1/?'
+        base_url = 'http://www.freelancer.com/jobs/690/?'
 
         # constant query strings
         base_url += 'languages=en&status=all'
@@ -65,9 +64,14 @@ class JobsSpider(scrapy.Spider):
             bid = job.css('div.JobSearchCard-primary-price::text').get().strip()
             verified = True if job.css('div.JobSearchCard-primary-heading-status').get() else False
 
-            print((title,description,skills,days_left,bid,verified))
+            print((title,description,skills,days_left,bid,verified) , '\n' ,  file=open('data.txt', 'a'))
 
-        
+        # Go to next page and repeat till finishing this filter
+        next_page_relative_url = response.css('a.Pagination-item::attr(href)')[-2].get()
+        if next_page_relative_url != urlparse(response.url).path:
+            query_string = urlparse(response.url).query
+            to_follow_url = next_page_relative_url + '?' + query_string
+            yield response.follow(to_follow_url, callback=self.parse)
 
 
     def getDaysLeft(self, string):
