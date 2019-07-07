@@ -53,7 +53,24 @@ class JobsSpider(scrapy.Spider):
         # send requests
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
+            break
 
     def parse(self, response):
-        print('done')
+        # Extract data fields from page
+        for job in response.css('div.JobSearchCard-item'):
+            title = job.css('a.JobSearchCard-primary-heading-link::text').get().strip()
+            description = job.css('p.JobSearchCard-primary-description::text').get().strip()
+            skills = job.css('a.JobSearchCard-primary-tagsLink::text').getall()
+            days_left = self.getDaysLeft(job.css('span.JobSearchCard-primary-heading-days::text').get().strip())
+            bid = job.css('div.JobSearchCard-primary-price::text').get().strip()
+            verified = True if job.css('div.JobSearchCard-primary-heading-status').get() else False
 
+            print((title,description,skills,days_left,bid,verified))
+
+        
+
+
+    def getDaysLeft(self, string):
+        days = str.split(string)[0]
+
+        return 0 if days == 'Ended' else int(days)
