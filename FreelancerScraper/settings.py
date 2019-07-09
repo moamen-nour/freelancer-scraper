@@ -64,9 +64,11 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'FreelancerScraper.pipelines.FreelancerscraperPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'FreelancerScraper.pipelines.DefaultValuesPipeline': 300,
+    'FreelancerScraper.pipelines.MongoPipeline': 400,
+   
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html

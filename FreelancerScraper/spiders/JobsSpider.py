@@ -1,18 +1,13 @@
 import scrapy
+from FreelancerScraper.items import JobItem
+from FreelancerScraper.itemloaders import JobLoader
 from urllib.parse import urlencode , urlparse
-import pymongo
-from pymongo import ReplaceOne
 
 class JobsSpider(scrapy.Spider):
     name = 'jobs'
 
-    def __init__(self):
-        # Connect to db
-        self.mongo_client = pymongo.MongoClient('mongodb://localhost:27017/')
-        self.jobs_collection = self.mongo_client['freelancer']['jobs']
-
     def start_requests(self):
-        base_url = 'http://www.freelancer.com/jobs/1/?'
+        base_url = 'http://www.freelancer.com/jobs/?'
 
         # Constant query strings
         base_url += 'languages=en&status=all'
@@ -54,7 +49,7 @@ class JobsSpider(scrapy.Spider):
                         urls.append(base_url + '&' +urlencode(query_string))
 
         # Save urls to external file
-        print(urls, file=open('urls.txt', 'w'))
+        # print(urls, file=open('urls.txt', 'w'))
 
         # Send requests
         for url in urls:
@@ -65,28 +60,18 @@ class JobsSpider(scrapy.Spider):
         # Extract data fields from page
         operations = []
         for job in response.css('div.JobSearchCard-item'):
-            title = job.css('a.JobSearchCard-primary-heading-link::text').get().strip()
-            description = job.css('p.JobSearchCard-primary-description::text').get().strip()
-            skills = job.css('a.JobSearchCard-primary-tagsLink::text').getall()
-            days_left = self.getDaysLeft(job.css('span.JobSearchCard-primary-heading-days::text').get().strip())
-            bid = job.css('div.JobSearchCard-primary-price::text').get().strip()
-            verified = True if job.css('div.JobSearchCard-primary-heading-status').get() else False
 
-            # Create a dictionary
-            document = {
-                'title'       : title,
-                'description' : description,
-                'skills'      : skills,
-                'days_left'   : days_left,
-                'bid'         : bid,
-                'verified'    : verified
-            }
+            # Create a JobItem using JobLoader
+            jobLoader = JobLoader(item=JobItem() , selector=job , response=response)
+            jobLoader.add_css('title' , 'a.JobSearchCard-primary-heading-link::text')
+            jobLoader.add_css('description' , 'p.JobSearchCard-primary-description::text')
+            jobLoader.add_css('skills' , 'a.JobSearchCard-primary-tagsLink::text')
+            jobLoader.add_css('remaining_time' , 'span.JobSearchCard-primary-heading-days::text')
+            jobLoader.add_css('bid' , 'div.JobSearchCard-primary-price::text')
+            jobLoader.add_css('verified' , 'div.JobSearchCard-primary-heading-status')
 
-            # Add to array
-            operations.append(ReplaceOne(document , document , upsert=True))
-
-        # Bulk insert extracted data from page(avoiding insertion of duplicates)
-        self.jobs_collection.bulk_write(operations)
+            yield jobLoader.load_item()
+        
 
         # Go to next page and repeat till finishing this filter
         next_page_relative_url = response.css('a.Pagination-item::attr(href)')[-2].get()
@@ -95,10 +80,5 @@ class JobsSpider(scrapy.Spider):
             to_follow_url = next_page_relative_url + '?' + query_string
             yield response.follow(to_follow_url, callback=self.parse)
 
-    def getDaysLeft(self, string):
-        days = str.split(string)[0]
-        return 0 if days == 'Ended' else int(days)
 
-    def closed(self, reason):
-        # Close mongoDB client
-        self.mongo_client.close()
+

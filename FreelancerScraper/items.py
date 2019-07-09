@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-
-# Define here the models for your scraped items
-#
-# See documentation in:
-# https://doc.scrapy.org/en/latest/topics/items.html
+# Defines the models of scraped items
 
 import scrapy
 
-
-class FreelancerscraperItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+# Defines a scraped item by the Freelancer scraper
+class JobItem(scrapy.Item):
+    title = scrapy.Field()
+    description = scrapy.Field()
+    skills = scrapy.Field()
+    remaining_time = scrapy.Field()
+    bid = scrapy.Field()
+    verified = scrapy.Field()
