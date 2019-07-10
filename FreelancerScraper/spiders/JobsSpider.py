@@ -2,12 +2,13 @@ import scrapy
 from FreelancerScraper.items import JobItem
 from FreelancerScraper.itemloaders import JobLoader
 from urllib.parse import urlencode , urlparse
+import random
 
 class JobsSpider(scrapy.Spider):
     name = 'jobs'
 
     def start_requests(self):
-        base_url = 'http://www.freelancer.com/jobs/?'
+        base_url = 'https://www.freelancer.com/jobs/?'
 
         # Constant query strings
         base_url += 'languages=en&status=all'
@@ -16,7 +17,7 @@ class JobsSpider(scrapy.Spider):
         job_types = ['local','featured','recruiter','fulltime']
         budgets = ['fixed','hourly','contest']
         min_budget = 0
-        max_budget = 1000 #for testing only target -> 1000000
+        max_budget = 1000000 #for testing only target -> 1000000
         step = 1000
         
         # Create urls with query strings combinations
@@ -51,10 +52,15 @@ class JobsSpider(scrapy.Spider):
         # Save urls to external file
         # print(urls, file=open('urls.txt', 'w'))
 
-        # Send requests
+        # Shuffle and schedule requests
+        # random.shuffle(urls)
         for url in urls:
-            yield scrapy.Request(url=url, callback=self.parse)
-            break # for testing only
+            # Request passes through local proxy
+            yield scrapy.Request(url=url, callback=self.parse, meta={'proxy':self.settings.get('PRIVOXY_URL')})
+            # break # for testing only
+        # for i in range(10000):
+        #     yield scrapy.Request(url='http://icanhazip.com/', callback=self.parse, meta={'proxy':self.settings.get('PRIVOXY_URL')})
+
 
     def parse(self, response):
         # Extract data fields from page
@@ -79,6 +85,4 @@ class JobsSpider(scrapy.Spider):
             query_string = urlparse(response.url).query
             to_follow_url = next_page_relative_url + '?' + query_string
             yield response.follow(to_follow_url, callback=self.parse)
-
-
-
+        # print('$$$$$$$$$$$$ ' , response.text)

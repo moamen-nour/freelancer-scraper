@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
+from scrapy import signals
+from stem import Signal
+from stem.control import Controller
+import time
+import requests
+from requests.exceptions import RequestException
 
 # Define here the models for your spider middleware
-#
-# See documentation in:
-# https://doc.scrapy.org/en/latest/topics/spider-middleware.html
-
-from scrapy import signals
-
 
 class FreelancerscraperSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
@@ -56,48 +55,76 @@ class FreelancerscraperSpiderMiddleware(object):
         spider.logger.info('Spider opened: %s' % spider.name)
 
 
-class FreelancerscraperDownloaderMiddleware(object):
-    # Not all methods need to be defined. If a method is not defined,
-    # scrapy acts as if the downloader middleware does not modify the
-    # passed objects.
+# Define here the models for your downloader middleware
+
+class NewIpAllocator(object):
+
+    def __init__(self, tor_listening_port, control_password, proxies):
+        self.req_count = 0
+        self.new_ip = '0.0.0.0'
+        self.old_ip = '0.0.0.0'
+        self.proxies = proxies
+        self.controller = Controller.from_port(port=tor_listening_port)
+        self.controller.authenticate(password=control_password)
 
     @classmethod
     def from_crawler(cls, crawler):
-        # This method is used by Scrapy to create your spiders.
-        s = cls()
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
-        return s
+        # Read needed values from settings module
+        settings = crawler.settings
+        proxies = {
+            'http': settings.get('PRIVOXY_URL'),
+        }
+        return cls(settings.get('TOR_LISTENING_PORT'), settings.get('CONTROL_PASSWORD'), proxies)
 
+    # Here I try to allocate a new IP
     def process_request(self, request, spider):
-        # Called for each request that goes through the downloader
-        # middleware.
 
-        # Must either:
-        # - return None: continue processing this request
-        # - or return a Response object
-        # - or return a Request object
-        # - or raise IgnoreRequest: process_exception() methods of
-        #   installed downloader middleware will be called
-        return None
+        # If we already done 5 requests or if it is the first time get a new ip
+        if(self.req_count == 5 or self.new_ip == '0.0.0.0'):
+            # Reset counter and attempt to get a new ip
+            self.req_count = 0
+
+            # Allocate a new ip
+            self.renew_tor_ip()
+            self.get_current_ip()
+            while self.new_ip == self.old_ip:# We got the same old ip so retry after 5 seconds
+                print('Assigned old ip waiting...')
+                time.sleep(5)
+                
+                self.renew_tor_ip()
+                self.get_current_ip()
+
+        # Inrement req_count
+        self.req_count += 1
+        
+        return None # Pass request down through Downloader pipeline
 
     def process_response(self, request, response, spider):
-        # Called with the response returned from the downloader.
-
-        # Must either;
-        # - return a Response object
-        # - return a Request object
-        # - or raise IgnoreRequest
         return response
 
     def process_exception(self, request, exception, spider):
-        # Called when a download handler or a process_request()
-        # (from other downloader middleware) raises an exception.
-
-        # Must either:
-        # - return None: continue processing this exception
-        # - return a Response object: stops process_exception() chain
-        # - return a Request object: stops process_exception() chain
         pass
 
-    def spider_opened(self, spider):
-        spider.logger.info('Spider opened: %s' % spider.name)
+    def spider_closed(self, spider):
+        self.controller.close()
+
+    # Gets current assigned ip
+    def get_current_ip(self):
+        try:
+            # Store old ip
+            self.old_ip = self.new_ip 
+
+            # Send request to icanhazip.com to know my ip
+            self.new_ip = requests.get('http://icanhazip.com/',proxies=self.proxies).text
+
+            # Display new ip
+            print ('Connected with IP: %s' % self.new_ip)
+            
+        except RequestException as ex:
+            print(ex.message)
+
+    # Connects to Tor network using stem controller
+    # and asks to assign a new ip
+    def renew_tor_ip(self):
+        self.controller.signal(Signal.NEWNYM)
+    
