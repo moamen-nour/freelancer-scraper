@@ -1,9 +1,6 @@
 from scrapy import signals
-from stem import Signal
-from stem.control import Controller
-import time
-import requests
-from requests.exceptions import RequestException
+from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+import json
 
 # Define here the models for your spider middleware
 
@@ -57,74 +54,30 @@ class FreelancerscraperSpiderMiddleware(object):
 
 # Define here the models for your downloader middleware
 
-class NewIpAllocator(object):
-
-    def __init__(self, tor_listening_port, control_password, proxies):
-        self.req_count = 0
-        self.new_ip = '0.0.0.0'
-        self.old_ip = '0.0.0.0'
-        self.proxies = proxies
-        self.controller = Controller.from_port(port=tor_listening_port)
-        self.controller.authenticate(password=control_password)
-
+class RotatingUserAgents(UserAgentMiddleware):
+    def __init__(self, user_agent='Scrapy',  ua_file_path=''):
+        super(RotatingUserAgents, self).__init__()
+        self.user_agent = user_agent
+        self.ua_file_path = ua_file_path
+    
     @classmethod
     def from_crawler(cls, crawler):
-        # Read needed values from settings module
-        settings = crawler.settings
-        proxies = {
-            'http': settings.get('PRIVOXY_URL'),
-        }
-        return cls(settings.get('TOR_LISTENING_PORT'), settings.get('CONTROL_PASSWORD'), proxies)
 
-    # Here I try to allocate a new IP
+        o = cls(crawler.settings['USER_AGENT'], crawler.settings.get('UA_FILE_PATH'))
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
+        return o
+
     def process_request(self, request, spider):
+        ua = self.ua_file.readline()
+        if ua == '':
+            self.ua_file.seek(0)
+            ua = self.ua_file.readline()
 
-        # If we already done 5 requests or if it is the first time get a new ip
-        if(self.req_count == 5 or self.new_ip == '0.0.0.0'):
-            # Reset counter and attempt to get a new ip
-            self.req_count = 0
+        request.headers.setdefault('User-Agent', ua)
 
-            # Allocate a new ip
-            self.renew_tor_ip()
-            self.get_current_ip()
-            while self.new_ip == self.old_ip:# We got the same old ip so retry after 5 seconds
-                print('Assigned old ip waiting...')
-                time.sleep(5)
-                
-                self.renew_tor_ip()
-                self.get_current_ip()
-
-        # Inrement req_count
-        self.req_count += 1
-        
-        return None # Pass request down through Downloader pipeline
-
-    def process_response(self, request, response, spider):
-        return response
-
-    def process_exception(self, request, exception, spider):
-        pass
+    def spider_opened(self, spider):
+        self.ua_file = open(self.ua_file_path,'r')
 
     def spider_closed(self, spider):
-        self.controller.close()
-
-    # Gets current assigned ip
-    def get_current_ip(self):
-        try:
-            # Store old ip
-            self.old_ip = self.new_ip 
-
-            # Send request to icanhazip.com to know my ip
-            self.new_ip = requests.get('http://icanhazip.com/',proxies=self.proxies).text
-
-            # Display new ip
-            print ('Connected with IP: %s' % self.new_ip)
-            
-        except RequestException as ex:
-            print(ex.message)
-
-    # Connects to Tor network using stem controller
-    # and asks to assign a new ip
-    def renew_tor_ip(self):
-        self.controller.signal(Signal.NEWNYM)
-    
+        self.ua_file.close()

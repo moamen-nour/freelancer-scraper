@@ -20,7 +20,7 @@ NEWSPIDER_MODULE = 'FreelancerScraper.spiders'
 #USER_AGENT = 'FreelancerScraper (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 10
@@ -54,42 +54,15 @@ CONCURRENT_REQUESTS_PER_IP = 5
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    'FreelancerScraper.middlewares.NewIpAllocator': 1000,
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
-    'scrapy_useragents.downloadermiddlewares.useragents.UserAgentsMiddleware': 500,
+    'FreelancerScraper.middlewares.RotatingUserAgents': 500,
 }
-
-USER_AGENTS = [
-    ('Mozilla/5.0 (X11; Linux x86_64) '
-     'AppleWebKit/537.36 (KHTML, like Gecko) '
-     'Chrome/57.0.2987.110 '
-     'Safari/537.36'),  # chrome
-    ('Mozilla/5.0 (X11; Linux x86_64) '
-     'AppleWebKit/537.36 (KHTML, like Gecko) '
-     'Chrome/61.0.3163.79 '
-     'Safari/537.36'),  # chrome
-    ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) '
-     'Gecko/20100101 '
-     'Firefox/55.0'),  # firefox
-    ('Mozilla/5.0 (X11; Linux x86_64) '
-     'AppleWebKit/537.36 (KHTML, like Gecko) '
-     'Chrome/61.0.3163.91 '
-     'Safari/537.36'),  # chrome
-    ('Mozilla/5.0 (X11; Linux x86_64) '
-     'AppleWebKit/537.36 (KHTML, like Gecko) '
-     'Chrome/62.0.3202.89 '
-     'Safari/537.36'),  # chrome
-    ('Mozilla/5.0 (X11; Linux x86_64) '
-     'AppleWebKit/537.36 (KHTML, like Gecko) '
-     'Chrome/63.0.3239.108 '
-     'Safari/537.36'),  # chrome
-]
 
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
-#EXTENSIONS = {
-#    'scrapy.extensions.telnet.TelnetConsole': None,
-#}
+EXTENSIONS = {
+   'FreelancerScraper.extensions.DownloaderRequestCounter': 0,
+}
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
@@ -126,6 +99,16 @@ TOR_LISTENING_PORT = 9051
 CONTROL_PASSWORD = os.environ['CONTROL_PASSWORD']
 
 # privoxy HTTP proxy url (localhost)
-PRIVOXY_URL = 'http://127.0.0.1:8118'
+PRIVOXY_URL = 'https://127.0.0.1:8118'
 
 # DUPEFILTER_CLASS = 'scrapy.dupefilters.BaseDupeFilter'
+
+
+# Setting to enable requests counter extension
+EXT_REQ_COUNTER = True
+
+# Set limit before assigning a new ip
+EXT_REQ_COUNTER_LIMIT = 5
+
+# File containing new user agents strings
+UA_FILE_PATH = 'FreelancerScraper/useragents.txt'
