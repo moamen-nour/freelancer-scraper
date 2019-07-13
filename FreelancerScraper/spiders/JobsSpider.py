@@ -53,13 +53,13 @@ class JobsSpider(scrapy.Spider):
         # print(urls, file=open('urls.txt', 'w'))
 
         # Shuffle and schedule requests
-        # random.shuffle(urls)
+        random.shuffle(urls)
         for url in urls:
             # Request passes through local proxy
-            yield scrapy.Request(url=url, callback=self.parse, meta={'proxy':self.settings.get('PRIVOXY_URL')})
+            yield scrapy.Request(url=url, callback=self.parse)
             # break # for testing only
         # for i in range(10000):
-        #     yield scrapy.Request(url='http://icanhazip.com/', callback=self.parse, meta={'proxy':self.settings.get('PRIVOXY_URL')})
+        #     yield scrapy.Request(url='http://icanhazip.com/', callback=self.parse)
 
 
     def parse(self, response):

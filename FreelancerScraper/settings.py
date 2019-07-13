@@ -20,7 +20,7 @@ NEWSPIDER_MODULE = 'FreelancerScraper.spiders'
 #USER_AGENT = 'FreelancerScraper (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = False
+ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 10
@@ -61,7 +61,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
 EXTENSIONS = {
-   'FreelancerScraper.extensions.DownloaderRequestCounter': 0,
+   'FreelancerScraper.extensions.IpChanger': 0,
 }
 
 # Configure item pipelines
@@ -74,14 +74,14 @@ ITEM_PIPELINES = {
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
-#AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_ENABLED = True
 # The initial download delay
-#AUTOTHROTTLE_START_DELAY = 5
+AUTOTHROTTLE_START_DELAY = 5
 # The maximum download delay to be set in case of high latencies
-#AUTOTHROTTLE_MAX_DELAY = 60
+AUTOTHROTTLE_MAX_DELAY = 60
 # The average number of requests Scrapy should be sending in parallel to
 # each remote server
-#AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+AUTOTHROTTLE_TARGET_CONCURRENCY = 5
 # Enable showing throttling stats for every response received:
 #AUTOTHROTTLE_DEBUG = False
 
@@ -98,17 +98,17 @@ ITEM_PIPELINES = {
 TOR_LISTENING_PORT = 9051
 CONTROL_PASSWORD = os.environ['CONTROL_PASSWORD']
 
-# privoxy HTTP proxy url (localhost)
-PRIVOXY_URL = 'https://127.0.0.1:8118'
+# privoxy HTTP(S) proxy urls (localhost) # Also set up using env variables(http_proxy % https_proxy)
+PRIVOXY_URL_HTTP = 'http://127.0.0.1:8118'
+PRIVOXY_URL_HTTPS = 'https://127.0.0.1:8118'
 
 # DUPEFILTER_CLASS = 'scrapy.dupefilters.BaseDupeFilter'
 
-
 # Setting to enable requests counter extension
-EXT_REQ_COUNTER = True
+EXT_IP_CHANGER = True
 
 # Set limit before assigning a new ip
-EXT_REQ_COUNTER_LIMIT = 5
+EXT_IP_CHANGER_LIMIT = 5
 
 # File containing new user agents strings
 UA_FILE_PATH = 'FreelancerScraper/useragents.txt'
