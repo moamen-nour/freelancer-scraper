@@ -4,7 +4,7 @@ A Scrapy crawler that extract jobs from freelancer website
 
 ### Prerequisites
 * [Scrapy](https://scrapy.org/download/) - Web scraping framework
-* [Tor](http://www.dropwizard.io/1.0.2/docs/) - For anonymous browsing via IP changing
+* [Tor](https://2019.www.torproject.org/docs/debian.html.en) - For anonymous browsing via IP changing
 * [Stem](https://stem.torproject.org/download.html) - Tor controller
 * [Privoxy](https://www.privoxy.org/#DOWNLOAD) - To further hide your identity when communicating with Tor
 * [Requests](https://2.python-requests.org/en/master/user/install/) - Used to send requests to identify new identity assigned by Tor
@@ -26,7 +26,7 @@ To hash a password
 ```
 tor --hash-password my_password
 ```
-Restar Tor
+Restart Tor
 ```
 sudo /etc/init.d/tor restart
 ```
